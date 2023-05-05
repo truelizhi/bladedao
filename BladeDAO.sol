@@ -18,7 +18,7 @@ contract BladeDAO is ERC721 {
         address account,
         bytes32[] calldata proof
     ) external {
-        if(block.timestamp - deployTime < 60){
+        if(block.timestamp - deployTime < 1440000){
             require(_verify(_leaf(account), proof), "Invalid merkle proof"); // Merkle检验通过
         }
         _safeMint(account); // mint
