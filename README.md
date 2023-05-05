@@ -1,4 +1,5 @@
 # bladedao
+生成白名单默克尔树
 npx hardhat run whitelist.mjs
 
 正式部署前checklist：</br>
