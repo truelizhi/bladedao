@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-contract ERC721 {
+abstract contract ERC721 {
 
     event Transfer(address indexed from, address indexed to, uint256 indexed id);
+
+    event Approval(address indexed owner, address indexed spender, uint256 indexed id);
+
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
 
     string public name;
 
@@ -14,8 +18,6 @@ contract ERC721 {
     mapping(address => uint256) internal _balanceOf;
 
     uint256 tokenId;
-
-    uint256 totalSize = 10;
 
     function ownerOf(uint256 id) public view returns (address owner) {
         require((owner = _ownerOf[id]) != address(0), "NOT_MINTED");
@@ -31,10 +33,30 @@ contract ERC721 {
     function maxTokenId() public view returns (uint256){
         return tokenId;
     }
+    
+    mapping(uint256 => address) public getApproved;
 
-    constructor() {
-        name = "Effective ERC";
-        symbol = "ITM";
+    mapping(address => mapping(address => bool)) public isApprovedForAll;
+
+    constructor(string memory _name, string memory _symbol) {
+        name = _name;
+        symbol = _symbol;
+    }
+
+    function approve(address spender, uint256 id) public {
+        address owner = _ownerOf[id];
+
+        require(msg.sender == owner || isApprovedForAll[owner][msg.sender], "NOT_AUTHORIZED");
+
+        getApproved[id] = spender;
+
+        emit Approval(owner, spender, id);
+    }
+
+    function setApprovalForAll(address operator, bool approved) public {
+        isApprovedForAll[msg.sender][operator] = approved;
+
+        emit ApprovalForAll(msg.sender, operator, approved);
     }
 
     function transferFrom(
@@ -49,7 +71,7 @@ contract ERC721 {
         require(_balanceOf[to] < 2, "OVER_TWO_TOKEN");
 
         require(
-            msg.sender == from,
+            msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[id],
             "NOT_AUTHORIZED"
         );
 
@@ -61,6 +83,8 @@ contract ERC721 {
         }
 
         _ownerOf[id] = to;
+
+        delete getApproved[id];
 
         emit Transfer(from, to, id);
     }
@@ -103,8 +127,8 @@ contract ERC721 {
         emit Transfer(address(0), to, id);
     }
 
-    function safeMint(address to) external {
-        require(tokenId < totalSize, "MINT_IS_OVER");
+    function _safeMint(address to) internal {
+        require(tokenId < 10, "mint is over");
         unchecked {
             tokenId += 1;
         }
@@ -117,10 +141,6 @@ contract ERC721 {
                 ERC721Recipient.onERC721Received.selector,
             "UNSAFE_RECIPIENT"
         );
-    }
-
-    function mintIsOver() view external {
-        require(tokenId < totalSize, "MINT_IS_OVER");
     }
 }
 
